@@ -17,7 +17,7 @@ for course_start in courses_init:
     speed = 5. # [m/s]
     g = 9.79768 # [m/s^2]
     t_end_init = 1. # [s]
-    N = 500 # [-]
+    N = 150 # [-]
 
     # just in case
     phi_max = np.clip(phi_max, -np.radians(90), np.radians(90))
@@ -117,7 +117,7 @@ for course_start in courses_init:
         vy[-1] == 0, # final y velocity is 0
         courses[-1] == 0, # final course is 0
         phis[-1] == 0, # final phi is 0
-        phis_dot[-1] == 0, # final phi_dot is 0
+        # phis_dot[-1] == 0, # final phi_dot is 0
     ])
 
     # constrain dynamics follow a plane turning model
@@ -136,14 +136,13 @@ for course_start in courses_init:
         py >= 0,
     ])
 
-
     # minimize time to reach the final position
     opti.minimize(t_end)
 
     sol = opti.solve(
         verbose=True,
         max_runtime=15.*4,
-        max_iter=10000,
+        max_iter=1000,
         behavior_on_failure='return_last'
     )
 
