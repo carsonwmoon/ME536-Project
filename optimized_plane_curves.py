@@ -117,7 +117,7 @@ for course_start in courses_init:
         vy[-1] == 0, # final y velocity is 0
         courses[-1] == 0, # final course is 0
         phis[-1] == 0, # final phi is 0
-        # phis_dot[-1] == 0, # final phi_dot is 0
+        phis_dot[-1] == 0, # final phi_dot is 0
     ])
 
     # constrain dynamics follow a plane turning model
