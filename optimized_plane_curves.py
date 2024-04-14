@@ -7,7 +7,7 @@ opti = asb.Opti()
 courses_init = np.radians(np.linspace(0., 90., 4))
 courses_init = np.array([np.radians(20)])
 
-for course_init in courses_init:
+for course_start in courses_init:
 
     # course_init = np.radians(90) # [rad]
 
@@ -17,27 +17,29 @@ for course_init in courses_init:
     speed = 5. # [m/s]
     g = 9.79768 # [m/s^2]
     t_end_init = 1. # [s]
-    N = 250 # [-]
+    N = 500 # [-]
 
     # just in case
     phi_max = np.clip(phi_max, -np.radians(90), np.radians(90))
 
     # set initial values
     time_init = np.linspace(0, t_end_init, N)
+    zero_to_one = np.linspace(0, 1, N)
     phis_init = np.linspace(0., 0., N)
     phis_dot_init = np.linspace(0., 0., N)
-    px_init = np.linspace(0, t_end_init * speed, N)
-    a, b, c = np.array([3, -4, 1]) * speed * np.sin(course_init)
-    py_init = a*time_init**2 + b*time_init + c # np.linspace(0, 0, N) # np.exp(-time_init) * time_init
-    vx_init = np.linspace(speed*np.cos(course_init), speed, N) # np.exp(-time_init) * (1. - time_init)
-    vy_init = np.linspace(speed*np.sin(course_init), 0, N) # np.linspace(speed, speed, N) # np.linspace(1, 1, N)
-    ax_init = (speed - speed*np.cos(course_init)) / t_end_init * np.ones(N) # np.linspace(0, 0, N)
-    ay_init = (0-speed*np.sin(course_init)) / t_end_init * np.ones(N) # np.exp(-time_init) * (time_init - 2.)
-    courses_init = np.linspace(course_init, 0, N)
+    courses_init = np.linspace(course_start, 0, N)
+    
+    px_init = speed * np.cos(course_start) * np.linspace(0, t_end_init, N) # np.linspace(0, t_end_init * speed, N)
+    py_init = speed * np.sin(course_start) * (time_init**3 - 2*time_init**2 + time_init) # np.linspace(0, 0, N) # np.exp(-time_init) * time_init
+    vx_init = speed * np.cos(course_start) * np.ones(N)
+    vy_init = speed * np.sin(course_start) * (3*time_init**2 - 4*time_init + 1)
+    ax_init = speed * np.cos(course_start) * np.zeros(N)
+    ay_init = speed * np.sin(course_start) * (6*time_init - 4)
 
     # plot the initial values
     # plt.plot(px_init, py_init)
     # plt.axis('equal')
+    # plt.title('Initial Path')
     # plt.show()
     # quit()
 
@@ -90,7 +92,7 @@ for course_init in courses_init:
         phis,
         with_respect_to=time,
         derivative_init_guess=phis_dot_init,
-        method='forward euler'
+        method='forward euler' # this helps with the solver to not be so shaky
     )
 
     opti.subject_to([
@@ -104,9 +106,9 @@ for course_init in courses_init:
     opti.subject_to([
         px[0] == p_init.item(0),
         py[0] == p_init.item(1),
-        courses[0] == courses_init[0],
-        vx[0] == np.cos(courses_init[0]) * speed,
-        vy[0] == np.sin(courses_init[0]) * speed,
+        vx[0] == np.cos(course_start) * speed,
+        vy[0] == np.sin(course_start) * speed,
+        courses[0] == course_start,
     ])
 
     # constrain final values
@@ -129,22 +131,19 @@ for course_init in courses_init:
     ])
 
     opti.subject_to([
-        courses <= np.radians(90),
-        courses >= -np.radians(90),
+        courses <= course_start,
+        courses >= -course_start,
         py >= 0,
-        np.abs(courses) <= np.abs(courses_init[0])
     ])
 
 
     # minimize time to reach the final position
     opti.minimize(t_end)
-    # opti.minimize(np.sum(phis_dot**2) * t_end)
-    # opti.minimize(np.sum(np.diff(phis_dot)**2 * np.diff(time)))
-    # opti.minimize(np.sum(np.trapz(phis_dot ** 2) * np.diff(time)) * t_end)
 
     sol = opti.solve(
         verbose=True,
         max_runtime=15.*4,
+        max_iter=10000,
         behavior_on_failure='return_last'
     )
 
