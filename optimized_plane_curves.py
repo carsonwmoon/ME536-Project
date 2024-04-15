@@ -106,8 +106,6 @@ for course_start in courses_init:
     opti.subject_to([
         px[0] == p_init.item(0),
         py[0] == p_init.item(1),
-        vx[0] == np.cos(course_start) * speed,
-        vy[0] == np.sin(course_start) * speed,
         courses[0] == course_start,
     ])
 
