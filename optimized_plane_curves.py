@@ -140,17 +140,19 @@ for course_end in courses_init:
     opti.minimize(t_end)
 
     fig, axes = plt.subplots(2)
+    plt.tight_layout()
     traj_axis = axes[0]
     curve_init = traj_axis.plot(px_init, py_init, 'k--', label='Initial Path')[0]
+    plt.title(f'Intermediate Results for {round(np.degrees(course_end),1)} deg course')
     curve = traj_axis.plot([], [], 'b-', label='Optimized Path')[0]
     traj_axis.set_xlabel('x [m]')
     traj_axis.set_ylabel('y [m]')
     traj_axis.axis('equal')
     traj_axis.legend()
     angle_axis = axes[1]
-    phis_plot = angle_axis.plot(time_init, phis_init*180/np.pi, label='phi')[0]
-    phis_dot_plot = angle_axis.plot(time_init, phis_dot_init*180/np.pi, label='phi_dot')[0]
-    courses_plot = angle_axis.plot(time_init, courses_init*180/np.pi, label='course')[0]
+    phis_plot = angle_axis.plot(time_init, np.degrees(phis_init), label='phi')[0]
+    phis_dot_plot = angle_axis.plot(time_init, np.degrees(phis_dot_init), label='phi_dot')[0]
+    courses_plot = angle_axis.plot(time_init, np.degrees(courses_init), label='course')[0]
     omegas_plot = angle_axis.plot(time_init, g*np.tan(phis_init), label='omega')[0]
     if plot_traj_vs_time:
         px_plot = angle_axis.plot(time_init, px_init, label='px')[0]
@@ -160,16 +162,15 @@ for course_end in courses_init:
     angle_axis.set_xlabel('time [s]')
     angle_axis.set_ylabel('angle [deg]')
     angle_axis.legend()
-    plt.title(f'Intermediate Results for {round(course_end*180/np.pi,1)} deg course')
     plt.subplots_adjust(bottom=.06, hspace=.282, top=.97)
 
     def plot_trajectory(i=None):
         if i is None:
             curve.set_data(px, py)
-            phis_plot.set_data(time, phis*180/np.pi)
-            phis_dot_plot.set_data(time, phis_dot*180/np.pi)
-            courses_plot.set_data(time, courses*180/np.pi)
-            omegas_plot.set_data(time, omega*180/np.pi)
+            phis_plot.set_data(time, np.degrees(phis))
+            phis_dot_plot.set_data(time, np.degrees(phis_dot))
+            courses_plot.set_data(time, np.degrees(courses))
+            omegas_plot.set_data(time, np.degrees(omega))
             if plot_traj_vs_time:
                 px_plot.set_data(time, px)
                 py_plot.set_data(time, py)
@@ -180,15 +181,15 @@ for course_end in courses_init:
             angle_axis.relim()
             angle_axis.autoscale_view()
             if status:
-                plt.title(f'Optimized Trajectory for {round(course_end*180/np.pi,1)} deg course')
+                plt.title(f'Optimized Trajectory for {round(np.degrees(course_end),1)} deg course')
             else:
-                plt.title(f'Unsuccessful Trajectory for {round(course_end*180/np.pi,1)} deg course')
+                plt.title(f'Unsuccessful Trajectory for {round(np.degrees(course_end),1)} deg course')
         else:
             curve.set_data(opti.value(px), opti.value(py))
-            phis_plot.set_data(opti.value(time), opti.value(phis)*180/np.pi)
-            phis_dot_plot.set_data(opti.value(time), opti.value(phis_dot)*180/np.pi)
-            courses_plot.set_data(opti.value(time), opti.value(courses)*180/np.pi)
-            omegas_plot.set_data(opti.value(time), opti.value(omega)*180/np.pi)
+            phis_plot.set_data(opti.value(time), np.degrees(opti.value(phis)))
+            phis_dot_plot.set_data(opti.value(time), np.degrees(opti.value(phis_dot)))
+            courses_plot.set_data(opti.value(time), np.degrees(opti.value(courses)))
+            omegas_plot.set_data(opti.value(time), np.degrees(opti.value(omega)))
             if plot_traj_vs_time:
                 px_plot.set_data(opti.value(time), opti.value(px))
                 py_plot.set_data(opti.value(time), opti.value(py))
