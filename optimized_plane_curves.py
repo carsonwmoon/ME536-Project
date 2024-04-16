@@ -4,23 +4,23 @@ import matplotlib.pyplot as plt
 
 opti = asb.Opti()
 
-courses_init = np.radians(np.linspace(1., 90., 5))
-# courses_init = np.array([np.radians(90)])
+courses_init = np.radians(np.linspace(1., 90., 10))
+courses_init = np.array([np.radians(90)])
+
+phi_max = np.radians(10) # [rad]
+phi_dot_max = np.radians(360.*.1) # [rad/s]
+p_init = np.array([0., 0.]) # [m]
+speed = 5. # [m/s]
+g = 9.79768 # [m/s^2]
+t_end_init = 1. # [s]
+N = 250 # [-]
+
+# just in case
+phi_max = np.clip(phi_max, -np.radians(90), np.radians(90))
 
 for course_end in courses_init:
 
     # course_init = np.radians(90) # [rad]
-
-    phi_max = np.radians(40) # [rad]
-    phi_dot_max = np.radians(360.*1) # [rad/s]
-    p_init = np.array([0., 0.]) # [m]
-    speed = 5. # [m/s]
-    g = 9.79768 # [m/s^2]
-    t_end_init = 1. # [s]
-    N = 250 # [-]
-
-    # just in case
-    phi_max = np.clip(phi_max, -np.radians(90), np.radians(90))
 
     # set initial values
     time_init = np.linspace(0, t_end_init, N)
@@ -33,6 +33,11 @@ for course_end in courses_init:
     py_init = -speed * np.sin(course_end) * (zero_to_one**3 - zero_to_one**4)
     vx_init = speed * (1 + (np.cos(course_end) - 1) * zero_to_one)
     vy_init = -speed * np.sin(course_end) * (3*zero_to_one**2 - 4*zero_to_one**3)
+    
+    # px_init = speed * (zero_to_one + .5 * (np.cos(course_end) - 1) * zero_to_one**2)
+    # py_init = -speed * np.sin(course_end) * (zero_to_one**3 - zero_to_one**4)
+    # vx_init = speed * (1 + (np.cos(course_end) - 1) * zero_to_one) * (1. - (10 - 10 * zero_to_one) / (np.sqrt(1+(10 - 10 * zero_to_one)**2)))
+    # vy_init = -speed * np.sin(course_end) * (-15 * zero_to_one**4 + 28 * zero_to_one**3 - 12 * zero_to_one**2)
 
     # plot the initial values
     # plt.plot(px_init, py_init)
@@ -92,7 +97,6 @@ for course_end in courses_init:
         vx[0] == speed, # initial x velocity is the desired speed
         courses[0] == 0, # initial course is 0
         phis[0] == 0, # initial phi is 0
-        # phis_dot[0] == 0, # initial phi_dot is 0
     ])
 
     # constrain final values
@@ -124,6 +128,10 @@ for course_end in courses_init:
         py <= 0,
         courses <= np.radians(90),
         courses >= -np.radians(90),
+        # phis_dot[0] <= 0.,
+        phis_dot[0] == -phi_dot_max, # initial phi_dot is 0
+        np.diff(phis_dot)[0] == 0, # initial phi_dot is 0
+        np.diff(phis_dot)[-1] == 0, # initial phi_dot is 0
     ])
 
     # minimize time to reach the final position
@@ -142,6 +150,10 @@ for course_end in courses_init:
     phis_dot_plot = angle_axis.plot(time_init, phis_dot_init*180/np.pi, label='phi_dot')[0]
     courses_plot = angle_axis.plot(time_init, courses_init*180/np.pi, label='course')[0]
     omegas_plot = angle_axis.plot(time_init, g*np.tan(phis_init), label='omega')[0]
+    px_plot = angle_axis.plot(time_init, px_init, label='px')[0]
+    py_plot = angle_axis.plot(time_init, py_init, label='py')[0]
+    vx_plot = angle_axis.plot(time_init, vx_init, label='vx')[0]
+    vy_plot = angle_axis.plot(time_init, vy_init, label='vy')[0]
     angle_axis.set_xlabel('time [s]')
     angle_axis.set_ylabel('angle [deg]')
     angle_axis.legend()
@@ -155,6 +167,10 @@ for course_end in courses_init:
             phis_dot_plot.set_data(time, phis_dot*180/np.pi)
             courses_plot.set_data(time, courses*180/np.pi)
             omegas_plot.set_data(time, omega*180/np.pi)
+            px_plot.set_data(time, px)
+            py_plot.set_data(time, py)
+            vx_plot.set_data(time, vx)
+            vy_plot.set_data(time, vy)
             traj_axis.relim()
             traj_axis.autoscale_view()
             angle_axis.relim()
@@ -169,6 +185,10 @@ for course_end in courses_init:
             phis_dot_plot.set_data(opti.value(time), opti.value(phis_dot)*180/np.pi)
             courses_plot.set_data(opti.value(time), opti.value(courses)*180/np.pi)
             omegas_plot.set_data(opti.value(time), opti.value(omega)*180/np.pi)
+            px_plot.set_data(opti.value(time), opti.value(px))
+            py_plot.set_data(opti.value(time), opti.value(py))
+            vx_plot.set_data(opti.value(time), opti.value(vx))
+            vy_plot.set_data(opti.value(time), opti.value(vy))
         
         traj_axis.relim()
         traj_axis.autoscale_view()
@@ -212,7 +232,7 @@ for course_end in courses_init:
     status = sol.stats()['success']
 
     # print the results
-    if status or False:
+    if status and False:
         print(f't_end = \n{t_end}')
         print(f'time = \n{time}')
         print(f'phis = \n{phis}')
