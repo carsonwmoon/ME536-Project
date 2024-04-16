@@ -34,19 +34,26 @@ def x_dot(t: float, x: np.ndarray, phis: np.ndarray, pad: bool) -> np.ndarray:
     xdot = np.concatenate([v.flatten(), a.flatten()])
     return xdot
 
-def simulate(phis: np.ndarray, pad=False) -> tuple[np.ndarray, np.ndarray, float]:
+def simulate(t_end: float, phis: np.ndarray, pad=False) -> tuple[np.ndarray, np.ndarray, float]:
+    t_span = (0, t_end)
+    N = int(100 * t_end)
+    ts = np.linspace(0, t_end, N)
     sol = solve_ivp(lambda t, x: x_dot(t, x, phis, pad), t_span, x0, method='Radau', t_eval=ts)
     p = sol.y[:2]
     v = sol.y[2:]
     path_length = np.sum(np.linalg.norm(np.diff(p, axis=1), axis=0))
     return p, v, path_length
 
-def objective(phis: np.ndarray) -> float:
+def objective(design_parameters: np.ndarray) -> float:
+    t_end = design_parameters[0]
+    phis = design_parameters[1:]
     _, _, path_length = simulate(phis, pad=True)
-    return path_length
+    return t_end
 
-def final_pos_is_good(phis: np.ndarray) -> float:
-    p, v, path_length = simulate(phis)
+def final_pos_is_good(design_parameters: np.ndarray) -> float:
+    t_end = design_parameters[0]
+    phis = design_parameters[1:]
+    p, v, path_length = simulate(t_end, phis)
     p_end_actual = p.T[-1]
     diff = np.linalg.norm(p_end_actual - p_end).item(0)
     print(f'p_end_actual: {np.round(p_end_actual,3)}, diff = {round(diff,3)}')
@@ -66,7 +73,7 @@ N = int(10000 * t_end)
 ts = np.linspace(0, t_end, N)
 phis_start = np.sin(5*ts) * phi_max
 phis = phis_start
-p, v, path_length = simulate(phis)
+p, v, path_length = simulate(t_end, phis)
 
 # plot the trajectory
 plt.axis('equal')
@@ -77,14 +84,15 @@ plt.title('Initial Trajectory')
 plt.show()
 quit()
 
-
 p_end = np.array([[2., 4.]])
 cons = ( # non negative values in inequality constriants mean that it's good
     {'type': 'ineq', 'fun': lambda x: phi_max - x},
     {'type': 'ineq', 'fun': lambda x: x - phi_max},
     {'type': 'ineq', 'fun': lambda x: 2. - final_pos_is_good(x)},
 )
-sol = minimize(objective, phis_start, constraints=cons)
+design_parameters = np.concatenate([np.array([t_end]), phis_start])
+print('Solving...')
+sol = minimize(objective, design_parameters, constraints=cons)
 print(sol)
 
 # extract the optimized solution
