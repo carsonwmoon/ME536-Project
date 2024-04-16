@@ -29,20 +29,9 @@ for course_end in courses_init:
     phis_dot_init = np.linspace(0., 0., N)
     courses_init = np.linspace(0, course_end, N)
     
-    course_end_path = course_end
-    # course_end_path = np.radians(30)
-
-    # px_init = speed * np.cos(course_end_path) * np.linspace(0, t_end_init, N) 
-    # px_init = np.linspace(0, t_end_init * speed, N)
     px_init = speed * (zero_to_one + .5 * (np.cos(course_end) - 1) * zero_to_one**2)
-
-    # py_init = -speed * np.sin(course_end_path) * (time_init**2 - time_init**3) 
-    # py_init = np.linspace(0, 0, N)
     py_init = -speed * np.sin(course_end) * (zero_to_one**3 - zero_to_one**4)
-
-    # vx_init = speed * np.cos(course_end_path) * np.ones(N)
     vx_init = speed * (1 + (np.cos(course_end) - 1) * zero_to_one)
-    # vy_init = -speed * np.sin(course_end_path) * (2*time_init - 3*time_init**2)
     vy_init = -speed * np.sin(course_end) * (3*zero_to_one**2 - 4*zero_to_one**3)
 
     # plot the initial values
@@ -133,8 +122,6 @@ for course_end in courses_init:
     # I found that constraining these helped the solver to converge faster
     opti.subject_to([
         py <= 0,
-        # courses <= course_end,
-        # courses >= -course_end,
         courses <= np.radians(90),
         courses >= -np.radians(90),
     ])
