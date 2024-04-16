@@ -2,6 +2,8 @@ import aerosandbox as asb
 import aerosandbox.numpy as np
 import matplotlib.pyplot as plt
 
+plot_traj_vs_time = False
+
 opti = asb.Opti()
 
 courses_init = np.radians(np.linspace(1., 90., 10))
@@ -150,10 +152,11 @@ for course_end in courses_init:
     phis_dot_plot = angle_axis.plot(time_init, phis_dot_init*180/np.pi, label='phi_dot')[0]
     courses_plot = angle_axis.plot(time_init, courses_init*180/np.pi, label='course')[0]
     omegas_plot = angle_axis.plot(time_init, g*np.tan(phis_init), label='omega')[0]
-    px_plot = angle_axis.plot(time_init, px_init, label='px')[0]
-    py_plot = angle_axis.plot(time_init, py_init, label='py')[0]
-    vx_plot = angle_axis.plot(time_init, vx_init, label='vx')[0]
-    vy_plot = angle_axis.plot(time_init, vy_init, label='vy')[0]
+    if plot_traj_vs_time:
+        px_plot = angle_axis.plot(time_init, px_init, label='px')[0]
+        py_plot = angle_axis.plot(time_init, py_init, label='py')[0]
+        vx_plot = angle_axis.plot(time_init, vx_init, label='vx')[0]
+        vy_plot = angle_axis.plot(time_init, vy_init, label='vy')[0]
     angle_axis.set_xlabel('time [s]')
     angle_axis.set_ylabel('angle [deg]')
     angle_axis.legend()
@@ -167,10 +170,11 @@ for course_end in courses_init:
             phis_dot_plot.set_data(time, phis_dot*180/np.pi)
             courses_plot.set_data(time, courses*180/np.pi)
             omegas_plot.set_data(time, omega*180/np.pi)
-            px_plot.set_data(time, px)
-            py_plot.set_data(time, py)
-            vx_plot.set_data(time, vx)
-            vy_plot.set_data(time, vy)
+            if plot_traj_vs_time:
+                px_plot.set_data(time, px)
+                py_plot.set_data(time, py)
+                vx_plot.set_data(time, vx)
+                vy_plot.set_data(time, vy)
             traj_axis.relim()
             traj_axis.autoscale_view()
             angle_axis.relim()
@@ -185,10 +189,11 @@ for course_end in courses_init:
             phis_dot_plot.set_data(opti.value(time), opti.value(phis_dot)*180/np.pi)
             courses_plot.set_data(opti.value(time), opti.value(courses)*180/np.pi)
             omegas_plot.set_data(opti.value(time), opti.value(omega)*180/np.pi)
-            px_plot.set_data(opti.value(time), opti.value(px))
-            py_plot.set_data(opti.value(time), opti.value(py))
-            vx_plot.set_data(opti.value(time), opti.value(vx))
-            vy_plot.set_data(opti.value(time), opti.value(vy))
+            if plot_traj_vs_time:
+                px_plot.set_data(opti.value(time), opti.value(px))
+                py_plot.set_data(opti.value(time), opti.value(py))
+                vx_plot.set_data(opti.value(time), opti.value(vx))
+                vy_plot.set_data(opti.value(time), opti.value(vy))
         
         traj_axis.relim()
         traj_axis.autoscale_view()
