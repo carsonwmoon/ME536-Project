@@ -74,9 +74,9 @@ def get_half_curve(half_angle, angle_ratio) -> np.ndarray:
 
     # plt.plot(*zip(*seg_1), lw=3, label='seg_1')
     # plt.scatter(*seg_1[0], c='r', s=100, label='seg_1_start')
-    # plt.plot(*zip(*seg_2_raw), lw=2, label='seg_2_raw')
-    # plt.scatter(*seg_2_raw[0], c='r', s=100, label='seg_2_raw_start')
-    # plt.plot(*zip(*seg_2_rotated), lw=2, label='seg_2_rotated')
+    # # plt.plot(*zip(*seg_2_raw), lw=2, label='seg_2_raw')
+    # # plt.scatter(*seg_2_raw[0], c='r', s=100, label='seg_2_raw_start')
+    # # plt.plot(*zip(*seg_2_rotated), lw=2, label='seg_2_rotated')
     # plt.plot(*zip(*seg_2), lw=2, label='seg_2')
     # plt.scatter(*seg_2[0], c='r', s=100, label='seg_2_start')
     # plt.plot(*zip(*seg_3), lw=1, label='seg_3')
@@ -97,14 +97,14 @@ def get_circle_center(angle: Union[float, np.ndarray]) -> Union[float, np.ndarra
     SI, CI = CI_SI(angle)
     cx = CI
     cy = SI + 1. / np.pi
-    t = np.sqrt(angle * 2./np.pi)
+    t = angle_to_t(angle)
     return np.array([cx, cy]) / t
 
 half_angle = -90*np.pi/180
 angle_ratio = 5 # angle_2/angle_1
 
-N = 5
-full_angles = np.radians(np.linspace(0, -180, N))
+N = 100
+full_angles = np.radians(np.linspace(180, -180, N))
 # full_angles = np.concatenate([full_angles, -full_angles])
 # full_angles = np.radians(np.array([-150]))
 
@@ -133,36 +133,39 @@ for i, full_angle in enumerate(full_angles):
     full_seg = np.concatenate([first_half_seg, second_half_seg])
 
     plt.plot(*zip(*full_seg), lw=1, label=f'${np.degrees(full_angle):.0f}\degree$')
-    plt.plot([0, first_half_seg[-1][0], full_seg[-1][0]], [0, first_half_seg[-1][1], full_seg[-1][1]], lw=1, c='k', linestyle='--')
+    # plt.plot([0, first_half_seg[-1][0], full_seg[-1][0]], [0, first_half_seg[-1][1], full_seg[-1][1]], lw=1, c='k', linestyle='--')
     plt.scatter(*second_half_seg[0], c='r', s=1)
-plt.legend()
-plt.title("Carson's Composite Clothoidal Curves")
+# plt.legend()
+# plt.title("Carson's Composite Clothoidal Curves")
 plt.tight_layout()
 plt.show()
-quit()
+# quit()
 
 data = np.stack([full_angles, angle_ratios], axis=1)
 
 print(data)
 
-plt.plot(full_angles*180/np.pi, angle_ratios, label='angle_ratios')
+plt.plot(np.degrees(full_angles), angle_ratios, label='Actual', lw=6)
+plt.xlabel('Half Angles [deg]')
+plt.ylabel(r"Angle Ratios $\frac{\theta_2}{\theta_1}$")
+plt.title('Angle Ratios vs Half Angles')
 # plt.show()
 
 # fit a parametric curve to the half_angles and angle_ratios
 import numpy.polynomial.polynomial as poly
-coefs = poly.polyfit(full_angles, angle_ratios, 10)
+coefs = poly.polyfit(full_angles, angle_ratios, 4)
 print(coefs)
 # plot the fitted curve
 fitted_angle_ratios = poly.polyval(full_angles, coefs)
-plt.plot(full_angles*180/np.pi, fitted_angle_ratios, label='fitted')
-plt.title('angle_ratios vs half_angles')
+plt.plot(np.degrees(full_angles), fitted_angle_ratios, label='Fitted', lw=2)
 plt.legend()
 plt.show()
 
 
-plt.plot(full_angles*180/np.pi, angle_ratios - fitted_angle_ratios, label='error')
+plt.plot(np.degrees(full_angles), angle_ratios - fitted_angle_ratios, label='Error')
+plt.xlabel('Half Angles [deg]')
 plt.yscale('log')
-plt.title('error of fitted curve on vs half_angles')
+plt.title('Error of Fitted Curve')
 plt.show()
 
 
