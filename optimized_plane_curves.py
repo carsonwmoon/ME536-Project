@@ -7,12 +7,11 @@ plot_traj_vs_time = False
 opti = asb.Opti()
 
 courses_init = np.radians(np.linspace(1., 90., 10))
-courses_init = np.array([np.radians(90)])
+# courses_init = np.array([np.radians(50)])
 
-phi_max = np.radians(10) # [rad]
+phi_max = np.radians(80) # [rad]
 phi_dot_max = np.radians(360.*.1) # [rad/s]
-p_init = np.array([0., 0.]) # [m]
-speed = 5. # [m/s]
+speed = 3. # [m/s]
 g = 9.79768 # [m/s^2]
 t_end_init = 1. # [s]
 N = 250 # [-]
@@ -20,7 +19,7 @@ N = 250 # [-]
 # just in case
 phi_max = np.clip(phi_max, -np.radians(90), np.radians(90))
 
-for course_end in courses_init:
+for course_desired in courses_init:
 
     # course_init = np.radians(90) # [rad]
 
@@ -29,12 +28,13 @@ for course_end in courses_init:
     zero_to_one = np.linspace(0, 1, N)
     phis_init = np.linspace(0., 0., N)
     phis_dot_init = np.linspace(0., 0., N)
-    courses_init = np.linspace(0, course_end, N)
+    courses_init = np.linspace(0, course_desired, N)
+    courses_dot_init = g * np.tan(phis_init)
     
-    px_init = speed * (zero_to_one + .5 * (np.cos(course_end) - 1) * zero_to_one**2)
-    py_init = -speed * np.sin(course_end) * (zero_to_one**3 - zero_to_one**4)
-    vx_init = speed * (1 + (np.cos(course_end) - 1) * zero_to_one)
-    vy_init = -speed * np.sin(course_end) * (3*zero_to_one**2 - 4*zero_to_one**3)
+    px_init = speed**2 * (zero_to_one + .5 * (np.cos(course_desired) - 1) * zero_to_one**2)
+    py_init = -speed**2 * np.sin(course_desired) * (zero_to_one**3 - zero_to_one**4)
+    vx_init = speed**2 * (1 + (np.cos(course_desired) - 1) * zero_to_one)
+    vy_init = -speed**2 * np.sin(course_desired) * (3*zero_to_one**2 - 4*zero_to_one**3)
     
     # px_init = speed * (zero_to_one + .5 * (np.cos(course_end) - 1) * zero_to_one**2)
     # py_init = -speed * np.sin(course_end) * (zero_to_one**3 - zero_to_one**4)
@@ -90,21 +90,31 @@ for course_end in courses_init:
         method='forward euler' # this helps with the solver to not be so shaky
     )
 
+    # constrain dynamics to follow a plane turning model
+    courses_dot = opti.derivative_of(
+        courses,
+        with_respect_to=time,
+        derivative_init_guess=courses_dot_init,
+    )
+    opti.subject_to([
+        courses_dot == g * np.tan(phis) / speed,
+    ])
+
     # constrain initial values
     opti.subject_to([
-        px[0] == p_init.item(0), # initial x position is the desired x position
-        py[0] == p_init.item(1), # initial y position is the desired y position
-        py[0] == 0, # initial y position is 0
-        vy[0] == 0, # initial y velocity is 0
-        vx[0] == speed, # initial x velocity is the desired speed
-        courses[0] == 0, # initial course is 0
-        phis[0] == 0, # initial phi is 0
+        px[0] == 0,          # initial x position is the desired x position
+        py[0] == 0,          # initial y position is 0
+        vy[0] == 0,          # initial y velocity is 0
+        vx[0] == speed,      # initial x velocity is the desired speed
+        courses[0] == 0,     # initial course is 0
+        phis[0] == 0,        # initial phi is 0
+        courses_dot[0] == 0, # initial course_dot is 0
     ])
 
     # constrain final values
     opti.subject_to([
-        py[-1] == 0,
-        courses[-1] == course_end,
+        py[-1] == 0,                    # final y position is 0
+        courses[-1] == course_desired,  # final course is the desired course
     ])
 
     # constrain phis and phis_dot to be within max values
@@ -113,16 +123,6 @@ for course_end in courses_init:
         phis_dot >= -phi_dot_max,
         phis < phi_max,
         phis > -phi_max,
-    ])
-
-    # constrain dynamics to follow a plane turning model
-    omega = opti.derivative_of(
-        courses,
-        with_respect_to=time,
-        derivative_init_guess=g * np.tan(phis_init),
-    )
-    opti.subject_to([
-        omega == g * np.tan(phis),
     ])
 
     # I found that constraining these helped the solver to converge faster
@@ -143,7 +143,7 @@ for course_end in courses_init:
     plt.tight_layout()
     traj_axis = axes[0]
     curve_init = traj_axis.plot(px_init, py_init, 'k--', label='Initial Path')[0]
-    plt.title(f'Intermediate Results for {round(np.degrees(course_end),1)} deg course')
+    plt.title(f'Intermediate Results for {round(np.degrees(course_desired),1)} deg course')
     curve = traj_axis.plot([], [], 'b-', label='Optimized Path')[0]
     traj_axis.set_xlabel('x [m]')
     traj_axis.set_ylabel('y [m]')
@@ -153,7 +153,7 @@ for course_end in courses_init:
     phis_plot = angle_axis.plot(time_init, np.degrees(phis_init), label='phi')[0]
     phis_dot_plot = angle_axis.plot(time_init, np.degrees(phis_dot_init), label='phi_dot')[0]
     courses_plot = angle_axis.plot(time_init, np.degrees(courses_init), label='course')[0]
-    omegas_plot = angle_axis.plot(time_init, g*np.tan(phis_init), label='omega')[0]
+    courses_dot_plot = angle_axis.plot(time_init, np.degrees(courses_dot_init), label='course_dot')[0]
     if plot_traj_vs_time:
         px_plot = angle_axis.plot(time_init, px_init, label='px')[0]
         py_plot = angle_axis.plot(time_init, py_init, label='py')[0]
@@ -170,7 +170,7 @@ for course_end in courses_init:
             phis_plot.set_data(time, np.degrees(phis))
             phis_dot_plot.set_data(time, np.degrees(phis_dot))
             courses_plot.set_data(time, np.degrees(courses))
-            omegas_plot.set_data(time, np.degrees(omega))
+            courses_dot_plot.set_data(time, np.degrees(courses_dot))
             if plot_traj_vs_time:
                 px_plot.set_data(time, px)
                 py_plot.set_data(time, py)
@@ -181,15 +181,15 @@ for course_end in courses_init:
             angle_axis.relim()
             angle_axis.autoscale_view()
             if status:
-                plt.title(f'Optimized Trajectory for {round(np.degrees(course_end),1)} deg course')
+                plt.title(f'Optimized Trajectory for {round(np.degrees(course_desired),1)} deg course')
             else:
-                plt.title(f'Unsuccessful Trajectory for {round(np.degrees(course_end),1)} deg course')
+                plt.title(f'Unsuccessful Trajectory for {round(np.degrees(course_desired),1)} deg course')
         else:
             curve.set_data(opti.value(px), opti.value(py))
             phis_plot.set_data(opti.value(time), np.degrees(opti.value(phis)))
             phis_dot_plot.set_data(opti.value(time), np.degrees(opti.value(phis_dot)))
             courses_plot.set_data(opti.value(time), np.degrees(opti.value(courses)))
-            omegas_plot.set_data(opti.value(time), np.degrees(opti.value(omega)))
+            courses_dot_plot.set_data(opti.value(time), np.degrees(opti.value(courses_dot)))
             if plot_traj_vs_time:
                 px_plot.set_data(opti.value(time), opti.value(px))
                 py_plot.set_data(opti.value(time), opti.value(py))
@@ -230,7 +230,7 @@ for course_end in courses_init:
     px = sol.value(px)
     py = sol.value(py)
     phis_dot = sol.value(phis_dot)
-    omega = sol.value(omega)
+    courses_dot = sol.value(courses_dot)
 
     # computed values
     p = np.vstack((px, py))
@@ -248,7 +248,7 @@ for course_end in courses_init:
         print(f'px = \n{px}')
         print(f'py = \n{py}')
         print(f'phis_dot = \n{phis_dot}')
-        print(f'omega = \n{omega}')
+        print(f'courses_dot = \n{courses_dot}')
 
     # print important values
     print(f"Solution Status: {status}")
