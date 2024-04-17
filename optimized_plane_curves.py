@@ -6,15 +6,15 @@ plot_traj_vs_time = False
 
 opti = asb.Opti()
 
-courses_init = np.radians(np.linspace(1., 90., 10))
-# courses_init = np.array([np.radians(50)])
+courses_init = np.radians(np.linspace(10., 90., 9))
+# courses_init = np.array([np.radians(90)])
 
-phi_max = np.radians(80) # [rad]
+phi_max = np.radians(20) # [rad]
 phi_dot_max = np.radians(360.*.1) # [rad/s]
-speed = 3. # [m/s]
+speed = 1. # [m/s]
 g = 9.79768 # [m/s^2]
 t_end_init = 1. # [s]
-N = 250 # [-]
+N = 50 # [-]
 
 # just in case
 phi_max = np.clip(phi_max, -np.radians(90), np.radians(90))
@@ -133,17 +133,22 @@ for course_desired in courses_init:
         # phis_dot[0] <= 0.,
         phis_dot[0] == -phi_dot_max, # initial phi_dot is 0
         np.diff(phis_dot)[0] == 0, # initial phi_dot is 0
-        np.diff(phis_dot)[-1] == 0, # initial phi_dot is 0
+        # np.diff(phis_dot)[-1] == 0, # initial phi_dot is 0
+        np.diff(courses_dot)[0] < 0, # initial course_dot is < 0
     ])
 
     # minimize time to reach the final position
-    opti.minimize(t_end)
+    # min_this = time
+    # path_length = np.sum(vx**2 + vy**2) * t_end
+    path_length = np.sum((np.diff(px)**2 + np.diff(py)**2) / np.diff(time)**2) * t_end
+    min_this = path_length
+    opti.minimize(min_this)
 
     fig, axes = plt.subplots(2)
     plt.tight_layout()
     traj_axis = axes[0]
     curve_init = traj_axis.plot(px_init, py_init, 'k--', label='Initial Path')[0]
-    plt.title(f'Intermediate Results for {round(np.degrees(course_desired),1)} deg course')
+    plt.title(f'Intermediate Trajectory for {round(np.degrees(course_desired),1)} deg course')
     curve = traj_axis.plot([], [], 'b-', label='Optimized Path')[0]
     traj_axis.set_xlabel('x [m]')
     traj_axis.set_ylabel('y [m]')
@@ -202,6 +207,7 @@ for course_desired in courses_init:
         angle_axis.autoscale_view()
 
         if i is None:
+            # plt.show(block=False)
             plt.show()
         else:
             plt.pause(0.01)
